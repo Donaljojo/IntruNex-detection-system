@@ -1,4 +1,4 @@
-
+ 
 protected $middlewareGroups = [
     'web'] => ['web' => [
     \App\Http\Middleware\EncryptCookies::class,
