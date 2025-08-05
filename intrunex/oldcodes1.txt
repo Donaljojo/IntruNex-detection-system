@@ -1,3 +1,61 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class DetectWebExploits
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        return $next($request);
+    }
+}
+
+
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class DetectWebExploits
+{
+    public function handle(Request $request, Closure $next)
+    {
+        $patterns = [
+            '/(\%27)|(\')|(\-\-)|(\%23)|(#)/i',             // SQL Injection
+            '/((\%3C)|<)[^\n]+((\%3E)|>)/i',                 // XSS
+            '/((\.\.\/)+)/i',                                // Path Traversal
+        ];
+
+        $input = json_encode($request->all());
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $input)) {
+                Log::warning('⚠️ Exploit attempt detected.', [
+                    'ip' => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'payload' => $input
+                ]);
+                abort(403, 'Exploit attempt detected.');
+            }
+        }
+
+        return $next($request);
+    }
+}
+
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -5,7 +63,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>Laravel</title>
-
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
